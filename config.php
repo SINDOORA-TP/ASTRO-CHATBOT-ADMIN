@@ -127,3 +127,4 @@ function initAdminSqliteTables(PDO $pdo): void {
         CREATE INDEX IF NOT EXISTS idx_b_phone ON bookings (phone);
     ");
 }
+
