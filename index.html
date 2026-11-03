@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Astro Admin — ஜோதிடர் ஆலோசனை மேலாண்மை</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔮</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-dark: #0f0728;
+      --panel-bg: rgba(26, 12, 58, 0.85);
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --border: rgba(167, 139, 250, 0.25);
+      --primary: #8b5cf6;
+      --primary-hover: #7c3aed;
+      --gold: #fbbf24;
+      --gold-dark: #d97706;
+      --text: #f3f4f6;
+      --text-muted: #c4b5fd;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --info: #3b82f6;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #2e1065 0%, var(--bg-dark) 100%);
+      color: var(--text);
+      font-family: 'Inter', 'Noto Sans Tamil', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Cosmic starry background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 20% 30%, #fff 100%, transparent),
+        radial-gradient(1.5px 1.5px at 70% 60%, rgba(251, 191, 36, 0.8) 100%, transparent),
+        radial-gradient(1px 1px at 40% 80%, #fff 100%, transparent),
+        radial-gradient(1px 1px at 85% 20%, #fff 100%, transparent);
+      background-size: 550px 550px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    /* Container */
+    .app-container {
+      position: relative;
+      z-index: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.5rem;
+      flex: 1;
+    }
+
+    /* Header */
+    .admin-header {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-icon {
+      font-size: 2rem;
+      filter: drop-shadow(0 0 10px var(--gold));
+    }
+
+    .brand-text h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge-admin {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: #000;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .brand-text p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+      color: #fff;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
+
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+
+    /* Login Overlay */
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(15, 7, 40, 0.95);
+      backdrop-filter: blur(16px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .login-box {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 30px rgba(139, 92, 246, 0.2);
+    }
+
+    .login-box h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      color: #fff;
+    }
+
+    .login-box p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      text-align: left;
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .form-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 0.85rem;
+      font-size: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .demo-credentials {
+      margin-top: 1.25rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 0.6rem;
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: transform 0.2s ease;
+    }
+    .stat-card:hover { transform: translateY(-2px); }
+
+    .stat-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+    }
+
+    .stat-info .stat-val {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.1;
+    }
+
+    .stat-info .stat-lbl {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+
+    /* Main Table Panel */
+    .table-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-tab {
+      padding: 0.45rem 0.9rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-tab.active, .filter-tab:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.4rem 0.8rem;
+      min-width: 250px;
+    }
+
+    .search-box input {
+      background: none;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-size: 0.85rem;
+      width: 100%;
+    }
+
+    /* Table */
+    .table-responsive {
+      overflow-x: auto;
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.04);
+      padding: 0.85rem 1rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      vertical-align: middle;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .status-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .status-confirmed { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status-cancelled { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .chart-pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      background: rgba(139, 92, 246, 0.15);
+      color: #c4b5fd;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-top: 4px;
+    }
+
+    /* Review Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 4, 25, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-overlay.hidden { display: none; }
+
+    .modal-content {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      max-width: 900px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.75rem;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-header h2 {
+      font-size: 1.3rem;
+      color: #fff;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .modal-card h3 {
+      font-size: 0.95rem;
+      color: var(--gold);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.4rem 0;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+      font-size: 0.85rem;
+    }
+    .detail-row span:first-child { color: var(--text-muted); }
+    .detail-row span:last-child { color: #fff; font-weight: 500; }
+
+    /* Rasi Kattam in Modal */
+    .mini-kattam-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(4, 65px);
+      gap: 3px;
+      background: rgba(139, 92, 246, 0.3);
+      padding: 3px;
+      border-radius: 8px;
+      margin-top: 0.5rem;
+    }
+
+    .mini-kattam-cell {
+      background: #190938;
+      border: 1px solid rgba(167, 139, 250, 0.2);
+      border-radius: 4px;
+      padding: 2px 4px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      overflow: hidden;
+    }
+
+    .mini-kattam-cell.center {
+      grid-column: 2 / span 2;
+      grid-row: 2 / span 2;
+      background: #110526;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold);
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    .sign-name { color: var(--text-muted); font-size: 0.6rem; }
+    .planet-tags { color: var(--gold); font-weight: 600; font-size: 0.65rem; line-height: 1.1; }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+    }
+    .empty-state span { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--primary);
+      color: #fff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      z-index: 3000;
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .app-container { padding: 1rem; }
+      .admin-header { flex-direction: column; align-items: flex-start; }
+      .modal-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Login Modal / Screen -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+      <div style="font-size: 2.8rem; margin-bottom: 0.5rem;">🔮</div>
+      <h2>Astro Admin உள்நுழைவு</h2>
+      <p>ஜோதிடர் ஆலோசனை மற்றும் Slot மேலாண்மை</p>
+
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="adminUser">பயனர் பெயர் (Username)</label>
+          <input type="text" id="adminUser" class="form-input" value="admin" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="adminPass">கடவுச்சொல் (Password)</label>
+          <input type="password" id="adminPass" class="form-input" value="astro2025" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary login-btn">உள்நுழைக (Sign In) ✨</button>
+      </form>
+
+      <div class="demo-credentials">
+        <strong>Demo Login:</strong> Username: <code>admin</code> | Password: <code>astro2025</code> (or <code>admin</code>)
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Dashboard App -->
+  <div class="app-container">
+
+    <!-- Header -->
+    <header class="admin-header">
+      <div class="brand">
+        <div class="brand-icon">🔮</div>
+        <div class="brand-text">
+          <h1>ஜோதிட AI — Admin Panel <span class="badge-admin">Astrologer Desk</span></h1>
+          <p>நேரடி முன்பதிவுகள், கட்டண சரிபார்ப்பு & ஜாதக ஆய்வு மேலாண்மை</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn btn-secondary" onclick="loadBookings()">🔄 புதுப்பிக்க (Refresh)</button>
+        <button type="button" class="btn btn-secondary" onclick="addSampleBooking()">➕ மாதிரி பதிவு</button>
+        <a href="../astro-chatbot/index.html" class="btn btn-secondary" target="_blank">🌐 Chatbot தளம்</a>
+        <button type="button" class="btn btn-danger" onclick="handleLogout()">🚪 வெளியேறு</button>
+      </div>
+    </header>
+
+    <!-- Stats Overview Cards -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="color: #a78bfa;">📋</div>
+        <div class="stat-info">
+          <div class="stat-val" id="statTotal">0</div>
+          <div class="stat-lbl">மொத்த பதிவுகள் (Total)</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="color: #fbbf24;">⏳</div>
+        <div class="stat-info">
+          <div class="stat-val" id="statPending">0</div>
+          <div class="stat-lbl">காத்திருப்பில் (Pending)</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="color: #34d399;">✅</div>
+        <div class="stat-info">
+          <div class="stat-val" id="statConfirmed">0</div>
+          <div class="stat-lbl">உறுதிசெய்யப்பட்டது (Confirmed)</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="color: #f59e0b;">💰</div>
+        <div class="stat-info">
+          <div class="stat-val" id="statRevenue">₹0</div>
+          <div class="stat-lbl">வசூலான கட்டணம் (₹500/slot)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Table Panel -->
+    <main class="table-panel">
+      <div class="table-header">
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">அனைத்தும் (<span id="countAll">0</span>)</button>
+          <button class="filter-tab" data-filter="pending" onclick="setFilter('pending')">காத்திருப்பில் (<span id="countPending">0</span>)</button>
+          <button class="filter-tab" data-filter="confirmed" onclick="setFilter('confirmed')">உறுதிசெய்யப்பட்டது (<span id="countConfirmed">0</span>)</button>
+          <button class="filter-tab" data-filter="cancelled" onclick="setFilter('cancelled')">ரத்து (<span id="countCancelled">0</span>)</button>
+        </div>
+
+        <div class="search-box">
+          <span>🔍</span>
+          <input type="text" id="searchInput" placeholder="பெயர், தொலைபேசி, தேதியைத் தேடுக..." oninput="handleSearch()">
+        </div>
+      </div>
+
+      <!-- Bookings Table -->
+      <div class="table-responsive">
+        <table id="bookingsTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>ஜாதகர் பெயர் & எண்</th>
+              <th>பிறந்த விபரம் (DOB / ஊர்)</th>
+              <th>ராசி / நட்சத்திரம்</th>
+              <th>Slot தேதி & நேரம்</th>
+              <th>கட்டணம் & UPI</th>
+              <th>நிலை (Status)</th>
+              <th>நடவடிக்கை (Action)</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+
+      <div id="emptyState" class="empty-state hidden">
+        <span>📭</span>
+        <p>பதிவுகள் எதுவும் காணப்படவில்லை.</p>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Review Modal -->
+  <div class="modal-overlay hidden" id="reviewModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">ஜாதக ஆய்வு & முடிவு</h2>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+
+      <div class="modal-grid">
+        <!-- Native Details -->
+        <div class="modal-card">
+          <h3>👤 ஜாதகர் சுயவிவரம்</h3>
+          <div class="detail-row"><span>பதிவு எண்:</span><span id="mId">-</span></div>
+          <div class="detail-row"><span>பெயர்:</span><span id="mName">-</span></div>
+          <div class="detail-row"><span>தொலைபேசி:</span><span id="mPhone">-</span></div>
+          <div class="detail-row"><span>மின்னஞ்சல்:</span><span id="mEmail">-</span></div>
+          <div class="detail-row"><span>பிறந்த தேதி:</span><span id="mDob">-</span></div>
+          <div class="detail-row"><span>பிறந்த நேரம்:</span><span id="mTob">-</span></div>
+          <div class="detail-row"><span>பிறந்த ஊர்:</span><span id="mPob">-</span></div>
+          <div class="detail-row"><span>Slot நேரம்:</span><span id="mSlot">-</span></div>
+          <div class="detail-row"><span>கேள்வி:</span><span id="mQuestion" style="color:var(--gold);">-</span></div>
+          <div class="detail-row"><span>UPI குறிப்பு எண்:</span><span id="mUpiRef">-</span></div>
+        </div>
+
+        <!-- Rasi Kattam Chart -->
+        <div class="modal-card">
+          <h3>🪐 தென்னிந்திய ராசி கட்டம்</h3>
+          <div class="mini-kattam-grid" id="modalKattam">
+            <!-- 4x4 Grid populated via JS -->
+          </div>
+          <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted);" id="mChartMeta">
+            <!-- Lagna, Rasi, Nakshatra summary -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes and Actions -->
+      <div class="modal-card" style="margin-bottom: 1.5rem;">
+        <h3>📝 ஜோதிடர் குறிப்பு & வழிகாட்டல் அறிக்கை</h3>
+        <textarea id="astrologerNotes" class="form-input" rows="3" placeholder="ஜாதகருக்கு தெரிவிக்க வேண்டிய முக்கிய குறிப்புகள், சுபமுகூர்த்த நேரம் அல்லது பரிகாரக் குறிப்பை இங்கு பதிவிடவும்..."></textarea>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">மூடுக (Close)</button>
+        <button type="button" class="btn btn-danger" onclick="updateCurrentStatus('cancelled')">❌ ரத்து செய் (Cancel)</button>
+        <button type="button" class="btn btn-success" onclick="updateCurrentStatus('confirmed')">✅ உறுதிசெய் (Confirm Slot)</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initial Mock Data (Synchronized with Chatbot bookings)
+    const DEFAULT_BOOKINGS = [
+      {
+        id: "ASTRO-102941",
+        name: "Tharani T",
+        phone: "8438791321",
+        email: "sindooratp@gmail.com",
+        dob: "2007-03-12",
+        tob: "09:40",
+        pob: "Coimbatore",
+        slot_date: "2026-11-04",
+        slot_time: "14:30",
+        question: "Job security & Career growth direction",
+        status: "pending",
+        upi_ref: "UPI/31415926535",
+        created_at: "2026-11-03T10:15:00",
+        chart: {
+          lagna: { sign: "ரிஷபம்", lord: "சுக்கிரன்" },
+          rasi: { sign: "விருச்சிகம்", lord: "செவ்வாய்" },
+          nakshatra: { name: "அனுஷம்", pada: 2, lord: "சனி" }
+        }
+      },
+      {
+        id: "ASTRO-102938",
+        name: "Sindoora TP",
+        phone: "9876543210",
+        email: "sindoora@example.com",
+        dob: "1998-05-18",
+        tob: "13:17",
+        pob: "Chennai",
+        slot_date: "2026-11-05",
+        slot_time: "15:00",
+        question: "Business development & Marriage timing",
+        status: "confirmed",
+        upi_ref: "UPI/89421035129",
+        created_at: "2026-11-02T14:20:00",
+        chart: {
+          lagna: { sign: "சிம்மம்", lord: "சூரியன்" },
+          rasi: { sign: "கும்பம்", lord: "சனி" },
+          nakshatra: { name: "சதயம்", pada: 3, lord: "ராகு" }
+        }
+      },
+      {
+        id: "ASTRO-102895",
+        name: "Karthik Raja",
+        phone: "9443210987",
+        email: "karthik.raja@mail.com",
+        dob: "1992-11-25",
+        tob: "06:15",
+        pob: "Madurai",
+        slot_date: "2026-11-06",
+        slot_time: "16:30",
+        question: "Abroad employment opportunities",
+        status: "pending",
+        upi_ref: "UPI/44019283711",
+        created_at: "2026-11-01T09:00:00",
+        chart: {
+          lagna: { sign: "விருச்சிகம்", lord: "செவ்வாய்" },
+          rasi: { sign: "துலாம்", lord: "சுக்கிரன்" },
+          nakshatra: { name: "விசாகம்", pada: 4, lord: "குரு" }
+        }
+      }
+    ];
+
+    let allBookings = [];
+    let currentFilter = 'all';
+    let activeModalBooking = null;
+
+    // South Indian Chart Signs Mapping (clockwise from top-left Pisces)
+    const RASI_BOXES = [
+      { rasiNo: 12, name: 'மீனம்',      row: 1, col: 1 },
+      { rasiNo: 1,  name: 'மேஷம்',     row: 1, col: 2 },
+      { rasiNo: 2,  name: 'ரிஷபம்',    row: 1, col: 3 },
+      { rasiNo: 3,  name: 'மிதுனம்',   row: 1, col: 4 },
+      { rasiNo: 4,  name: 'கடகம்',     row: 2, col: 4 },
+      { rasiNo: 5,  name: 'சிம்மம்',   row: 3, col: 4 },
+      { rasiNo: 6,  name: 'கன்னி',     row: 4, col: 4 },
+      { rasiNo: 7,  name: 'துலாம்',     row: 4, col: 3 },
+      { rasiNo: 8,  name: 'விருச்சிகம்', row: 4, col: 2 },
+      { rasiNo: 9,  name: 'தனுசு',     row: 4, col: 1 },
+      { rasiNo: 10, name: 'மகரம்',     row: 3, col: 1 },
+      { rasiNo: 11, name: 'கும்பம்',    row: 2, col: 1 }
+    ];
+
+    // Auth Check
+    function checkAuth() {
+      const isLogged = localStorage.getItem('astro_admin_logged') === 'true' || sessionStorage.getItem('astro_admin_logged') === 'true';
+      const overlay = document.getElementById('loginOverlay');
+      if (isLogged) {
+        overlay.style.display = 'none';
+        loadBookings();
+      } else {
+        overlay.style.display = 'flex';
+      }
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const user = document.getElementById('adminUser').value.trim();
+      const pass = document.getElementById('adminPass').value;
+
+      if (user === 'admin' && (pass === 'astro2025' || pass === 'admin')) {
+        localStorage.setItem('astro_admin_logged', 'true');
+        document.getElementById('loginOverlay').style.display = 'none';
+        showToast('✅ வெற்றிகரமாக உள்நுழைந்துவிட்டீர்கள்!');
+        loadBookings();
+      } else {
+        alert('தவறான பயனர் பெயர் அல்லது கடவுச்சொல்!');
+      }
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('astro_admin_logged');
+      sessionStorage.removeItem('astro_admin_logged');
+      document.getElementById('loginOverlay').style.display = 'flex';
+      showToast('🚪 வெளியேறிவிட்டீர்கள்');
+    }
+
+    // Load Bookings from LocalStorage + Defaults
+    function loadBookings() {
+      try {
+        const stored = JSON.parse(localStorage.getItem('astro_bookings') || '[]');
+        const storedPayments = JSON.parse(localStorage.getItem('astro_payments') || '[]');
+
+        // Merge stored bookings with defaults
+        const merged = [...stored];
+        DEFAULT_BOOKINGS.forEach(def => {
+          if (!merged.some(m => m.id === def.id || (m.phone === def.phone && m.slot_date === def.slot_date))) {
+            merged.push(def);
+          }
+        });
+
+        // Attach payment reference if stored
+        merged.forEach(b => {
+          const pay = storedPayments.find(p => p.booking_id === b.id);
+          if (pay && pay.upi_ref) b.upi_ref = pay.upi_ref;
+        });
+
+        allBookings = merged;
+      } catch (e) {
+        allBookings = [...DEFAULT_BOOKINGS];
+      }
+
+      renderDashboard();
+    }
+
+    // Render Stats and Table
+    function renderDashboard() {
+      // 1. Stats Counter
+      const total = allBookings.length;
+      const pending = allBookings.filter(b => b.status === 'pending').length;
+      const confirmed = allBookings.filter(b => b.status === 'confirmed').length;
+      const cancelled = allBookings.filter(b => b.status === 'cancelled').length;
+
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statPending').textContent = pending;
+      document.getElementById('statConfirmed').textContent = confirmed;
+      document.getElementById('statRevenue').textContent = `₹${(confirmed * 500).toLocaleString()}`;
+
+      document.getElementById('countAll').textContent = total;
+      document.getElementById('countPending').textContent = pending;
+      document.getElementById('countConfirmed').textContent = confirmed;
+      document.getElementById('countCancelled').textContent = cancelled;
+
+      // 2. Filter Table
+      let filtered = allBookings;
+      if (currentFilter !== 'all') {
+        filtered = filtered.filter(b => b.status === currentFilter);
+      }
+
+      const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+      if (q) {
+        filtered = filtered.filter(b =>
+          (b.name || '').toLowerCase().includes(q) ||
+          (b.phone || '').includes(q) ||
+          (b.slot_date || '').includes(q) ||
+          (b.id || '').toLowerCase().includes(q)
+        );
+      }
+
+      renderTable(filtered);
+    }
+
+    function renderTable(items) {
+      const tbody = document.getElementById('tableBody');
+      const emptyState = document.getElementById('emptyState');
+      tbody.innerHTML = '';
+
+      if (items.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      emptyState.classList.add('hidden');
+
+      items.forEach(b => {
+        const tr = document.createElement('tr');
+        const rasi = b.chart?.rasi?.sign || 'சிம்மம்';
+        const nak = b.chart?.nakshatra?.name || 'மகம்';
+        const lagna = b.chart?.lagna?.sign || 'மேஷம்';
+
+        let badgeClass = 'status-pending';
+        let badgeLabel = 'காத்திருப்பில்';
+        if (b.status === 'confirmed') { badgeClass = 'status-confirmed'; badgeLabel = 'உறுதியானது'; }
+        else if (b.status === 'cancelled') { badgeClass = 'status-cancelled'; badgeLabel = 'ரத்து'; }
+
+        tr.innerHTML = `
+          <td><strong>#${b.id}</strong></td>
+          <td>
+            <strong>${escapeHtml(b.name)}</strong><br>
+            <span style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(b.phone)}</span>
+          </td>
+          <td>
+            ${b.dob || '-'} ${b.tob ? '('+b.tob+')' : ''}<br>
+            <span style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(b.pob || '-')}</span>
+          </td>
+          <td>
+            <div>லக்னம்: <strong>${lagna}</strong></div>
+            <div class="chart-pill">${rasi} / ${nak}</div>
+          </td>
+          <td>
+            <strong>${b.slot_date}</strong><br>
+            <span style="font-size:0.75rem; color:var(--gold);">${b.slot_time}</span>
+          </td>
+          <td>
+            <span>₹500.00</span><br>
+            <span style="font-size:0.75rem; color:var(--text-muted);">${b.upi_ref ? 'UPI: ' + escapeHtml(b.upi_ref) : 'நேரடி கட்டணம்'}</span>
+          </td>
+          <td>
+            <span class="status-badge ${badgeClass}">${badgeLabel}</span>
+          </td>
+          <td>
+            <button type="button" class="btn btn-primary" style="padding:0.35rem 0.75rem; font-size:0.75rem;" onclick="openReviewModal('${b.id}')">
+              🔍 ஆய்வு (Review)
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.getAttribute('data-filter') === filter);
+      });
+      renderDashboard();
+    }
+
+    function handleSearch() {
+      renderDashboard();
+    }
+
+    // Review Modal Open
+    function openReviewModal(bookingId) {
+      const b = allBookings.find(item => item.id === bookingId);
+      if (!b) return;
+
+      activeModalBooking = b;
+
+      document.getElementById('mId').textContent = '#' + b.id;
+      document.getElementById('mName').textContent = b.name;
+      document.getElementById('mPhone').textContent = b.phone;
+      document.getElementById('mEmail').textContent = b.email || '-';
+      document.getElementById('mDob').textContent = b.dob || '-';
+      document.getElementById('mTob').textContent = b.tob || '-';
+      document.getElementById('mPob').textContent = b.pob || '-';
+      document.getElementById('mSlot').textContent = `${b.slot_date} at ${b.slot_time}`;
+      document.getElementById('mQuestion').textContent = b.question || 'பொதுவான ஜாதக வழிகாட்டல்';
+      document.getElementById('mUpiRef').textContent = b.upi_ref || 'சரிபார்க்கப்படவில்லை';
+      document.getElementById('astrologerNotes').value = b.notes || '';
+
+      // Render 4x4 Rasi Kattam
+      renderModalKattam(b);
+
+      document.getElementById('reviewModal').classList.remove('hidden');
+    }
+
+    function renderModalKattam(booking) {
+      const kattam = document.getElementById('modalKattam');
+      kattam.innerHTML = '';
+
+      const rasi = booking.chart?.rasi?.sign || 'ரிஷபம்';
+      const lagna = booking.chart?.lagna?.sign || 'மேஷம்';
+      const nak = booking.chart?.nakshatra?.name || 'கிருத்திகை';
+
+      // 16 Cells Grid: 12 outer zodiac signs, 4 center cells merged
+      // We render a standard 4x4 matrix
+      for (let row = 1; row <= 4; row++) {
+        for (let col = 1; col <= 4; col++) {
+          if ((row === 2 || row === 3) && (col === 2 || col === 3)) {
+            // Center 4 merged into 1 on (2,2)
+            if (row === 2 && col === 2) {
+              const center = document.createElement('div');
+              center.className = 'mini-kattam-cell center';
+              center.innerHTML = `<div>ராசி கட்டம்<br><span style="font-size:0.65rem; color:#fff;">தென்னிந்தியா</span></div>`;
+              kattam.appendChild(center);
+            }
+            continue;
+          }
+
+          const box = RASI_BOXES.find(b => b.row === row && b.col === col);
+          const cell = document.createElement('div');
+          cell.className = 'mini-kattam-cell';
+
+          if (box) {
+            let tags = [];
+            if (box.name === lagna) tags.push('லக்');
+            if (box.name === rasi) tags.push('சந்');
+
+            cell.innerHTML = `
+              <div class="sign-name">${box.name}</div>
+              <div class="planet-tags">${tags.join(' ')}</div>
+            `;
+          }
+          kattam.appendChild(cell);
+        }
+      }
+
+      document.getElementById('mChartMeta').innerHTML = `
+        <strong>லக்னம்:</strong> ${lagna} | <strong>ராசி:</strong> ${rasi} | <strong>நட்சத்திரம்:</strong> ${nak}
+      `;
+    }
+
+    function closeModal() {
+      document.getElementById('reviewModal').classList.add('hidden');
+      activeModalBooking = null;
+    }
+
+    function updateCurrentStatus(newStatus) {
+      if (!activeModalBooking) return;
+      const b = activeModalBooking;
+      b.status = newStatus;
+      b.notes = document.getElementById('astrologerNotes').value.trim();
+
+      // Update in stored array
+      const idx = allBookings.findIndex(item => item.id === b.id);
+      if (idx !== -1) allBookings[idx] = b;
+
+      try {
+        localStorage.setItem('astro_bookings', JSON.stringify(allBookings));
+      } catch (e) {}
+
+      showToast(newStatus === 'confirmed' ? '✅ Slot உறுதிசெய்யப்பட்டது!' : '❌ Slot ரத்து செய்யப்பட்டது.');
+      closeModal();
+      renderDashboard();
+    }
+
+    function addSampleBooking() {
+      const newId = 'ASTRO-' + Math.floor(100000 + Math.random() * 900000);
+      const sample = {
+        id: newId,
+        name: "ரமேஷ் குமார்",
+        phone: "9840123456",
+        email: "ramesh@test.com",
+        dob: "1995-08-14",
+        tob: "10:30",
+        pob: "திருச்சி",
+        slot_date: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
+        slot_time: "16:00",
+        question: "சொந்த தொழில் & புதிய முதலீடு",
+        status: "pending",
+        upi_ref: "UPI/" + Math.floor(10000000000 + Math.random() * 90000000000),
+        created_at: new Date().toISOString(),
+        chart: {
+          lagna: { sign: "மிதுனம்", lord: "புதன்" },
+          rasi: { sign: "மேஷம்", lord: "செவ்வாய்" },
+          nakshatra: { name: "அசுவினி", pada: 1, lord: "கேது" }
+        }
+      };
+
+      allBookings.unshift(sample);
+      try {
+        localStorage.setItem('astro_bookings', JSON.stringify(allBookings));
+      } catch (e) {}
+      showToast('➕ புதிய மாதிரி பதிவு சேர்க்கப்பட்டது!');
+      renderDashboard();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+      });
+    }
+
+    // Auto-init on load
+    document.addEventListener('DOMContentLoaded', () => {
+      checkAuth();
+    });
+  </script>
+</body>
+</html>

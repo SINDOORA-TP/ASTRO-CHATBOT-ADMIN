@@ -4,7 +4,16 @@
  * Include at the top of every protected admin page.
  */
 
-session_start();
+$sessionDir = __DIR__ . '/sessions';
+if (!is_dir($sessionDir)) {
+    @mkdir($sessionDir, 0777, true);
+}
+if (is_dir($sessionDir) && is_writable($sessionDir)) {
+    @session_save_path($sessionDir);
+}
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
 
 // Admin credentials
 if (!defined('ADMIN_USER')) {

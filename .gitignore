@@ -8,6 +8,10 @@ data/*.sqlite-shm
 uploads/payments/*
 !uploads/payments/.gitkeep
 
+# Session files
+sessions/*
+!sessions/.gitkeep
+
 # System files
 .DS_Store
 Thumbs.db

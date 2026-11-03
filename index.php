@@ -3,7 +3,16 @@
  * index.php — Admin Login Page
  */
 
-session_start();
+$sessionDir = __DIR__ . '/sessions';
+if (!is_dir($sessionDir)) {
+    @mkdir($sessionDir, 0777, true);
+}
+if (is_dir($sessionDir) && is_writable($sessionDir)) {
+    @session_save_path($sessionDir);
+}
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
 
 // Already logged in → go to dashboard
 if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
@@ -19,7 +28,7 @@ $ADMIN_PASS_HASH = password_hash('astro2025', PASSWORD_BCRYPT);
 
 $error = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     // CSRF check
     $csrf = $_POST['csrf_token'] ?? '';
     if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrf)) {
