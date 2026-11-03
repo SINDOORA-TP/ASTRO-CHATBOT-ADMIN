@@ -7,6 +7,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔮</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -597,7 +598,7 @@
       <div class="header-actions">
         <button type="button" class="btn btn-secondary" onclick="loadBookings()">🔄 புதுப்பிக்க (Refresh)</button>
         <button type="button" class="btn btn-secondary" onclick="addSampleBooking()">➕ மாதிரி பதிவு</button>
-        <a href="../astro-chatbot/index.html" class="btn btn-secondary" target="_blank">🌐 Chatbot தளம்</a>
+        <button type="button" class="btn btn-secondary" onclick="openChatbotSite(event)">🌐 Chatbot தளம்</button>
         <button type="button" class="btn btn-danger" onclick="handleLogout()">🚪 வெளியேறு</button>
       </div>
     </header>
@@ -715,15 +716,30 @@
         </div>
       </div>
 
-      <!-- Notes and Actions -->
+      <!-- Astrological Report Editor & Actions -->
       <div class="modal-card" style="margin-bottom: 1.5rem;">
-        <h3>📝 ஜோதிடர் குறிப்பு & வழிகாட்டல் அறிக்கை</h3>
-        <textarea id="astrologerNotes" class="form-input" rows="3" placeholder="ஜாதகருக்கு தெரிவிக்க வேண்டிய முக்கிய குறிப்புகள், சுபமுகூர்த்த நேரம் அல்லது பரிகாரக் குறிப்பை இங்கு பதிவிடவும்..."></textarea>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+          <h3 style="margin-bottom: 0;">✍️ ஜோதிட வழிகாட்டல் அறிக்கை (Consultation Report)</h3>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.75rem;" onclick="generateAutoReport()">
+              ✨ தானியங்கி அறிக்கை உருவாக்கு
+            </button>
+            <button type="button" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.75rem;" onclick="openPrintReport()">
+              🖨️ அச்சிடு (Print)
+            </button>
+            <button type="button" class="btn btn-primary" style="font-size: 0.78rem; padding: 0.35rem 0.75rem;" onclick="exportReportToPdf()">
+              📄 PDF பதிவிறக்கு (Download PDF)
+            </button>
+          </div>
+        </div>
+
+        <textarea id="astrologerNotes" class="form-input" rows="8" style="font-family: inherit; line-height: 1.6; font-size: 0.88rem;" placeholder="ஜாதகருக்கு அனுப்ப வேண்டிய விரிவான ஜோதிட விளக்கம், தசா-புக்தி பலன், பரிகாரங்கள் மற்றும் நல்வழிகாட்டுதலை இங்கே எழுதவும்... (மேலே உள்ள '✨ தானியங்கி அறிக்கை உருவாக்கு' பொத்தானைப் பயன்படுத்தி உடனடி அறிக்கையைப் பெறலாம்)"></textarea>
       </div>
 
       <div style="display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap;">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">மூடுக (Close)</button>
         <button type="button" class="btn btn-danger" onclick="updateCurrentStatus('cancelled')">❌ ரத்து செய் (Cancel)</button>
+        <button type="button" class="btn btn-primary" onclick="saveReportOnly()">💾 அறிக்கையைச் சேமி (Save)</button>
         <button type="button" class="btn btn-success" onclick="updateCurrentStatus('confirmed')">✅ உறுதிசெய் (Confirm Slot)</button>
       </div>
     </div>
@@ -1115,6 +1131,224 @@
       setTimeout(() => { t.style.display = 'none'; }, 3000);
     }
 
+    function openChatbotSite(e) {
+      if (e) e.preventDefault();
+      const host = window.location.hostname;
+      const path = window.location.pathname;
+
+      if (host.includes('github.io')) {
+        window.open('https://sindoora-tp.github.io/ASTRO-CHATBOT/', '_blank');
+        return;
+      }
+      if (path.includes('/admin/')) {
+        window.open('../index.html', '_blank');
+        return;
+      }
+      window.open('../astro-chatbot/index.html', '_blank');
+    }
+
+    let parigaramDb = [];
+    async function initParigaramDb() {
+      try {
+        const res = await fetch('../data/parigaram_data.json');
+        if (res.ok) {
+          const raw = await res.text();
+          if (!raw.trim().startsWith('<')) parigaramDb = JSON.parse(raw);
+        }
+      } catch (e) {}
+    }
+    initParigaramDb();
+
+    function generateAutoReport() {
+      if (!activeModalBooking) return;
+      const b = activeModalBooking;
+      const name = b.name || 'ஜாதகர்';
+      const lagna = b.chart?.lagna?.sign || 'மேஷம்';
+      const rasi = b.chart?.rasi?.sign || 'ரிஷபம்';
+      const nak = b.chart?.nakshatra?.name || 'ரோகிணி';
+      const pada = b.chart?.nakshatra?.pada || '1';
+      const q = b.question || 'பொதுவான ஜோதிட வழிகாட்டல்';
+
+      let templeInfo = 'தங்கள் ஜென்ம நட்சத்திர நாளில் அருகிலுள்ள சிவாலயம் சென்று நெய் தீபம் ஏற்றி வழிபடவும்.';
+      if (parigaramDb && parigaramDb.length > 0) {
+        const found = parigaramDb.find(p => (p.nakshatram || '').includes(nak) || nak.includes(p.nakshatram || ''));
+        if (found) {
+          templeInfo = `பரிகாரத் தலம்: ${found.temple} (${found.temple_place})\nமூலவர்: ${found.deity}\nதல விருட்சம்: ${found.maram}\nவழிபாட்டு முறை: ${found.remedy}`;
+        }
+      }
+
+      const report = `=====================================================
+⭐ ஜோதிட வழிகாட்டல் & ஆலோசனை அறிக்கை (VEDIC REPORT) ⭐
+=====================================================
+ஜாதகர் பெயர்  : ${name}
+பதிவு எண்     : #${b.id}
+தேதி & நேரம்  : ${b.slot_date} (${b.slot_time})
+பிறந்த விபரம்  : ${b.dob} | ${b.tob} | ${b.pob}
+லக்னம்        : ${lagna} | ராசி: ${rasi} | நட்சத்திரம்: ${nak} (${pada}-ஆம் பாதம்)
+-----------------------------------------------------
+1. ஜாதகரின் கேள்வி & ஆய்வு:
+"${q}"
+
+2. தொழில் & உத்தியோக பலன் (Career & Direction):
+• லக்னம் ${lagna} மற்றும் ராசி ${rasi} அமைப்பின்படி, 10-ஆம் பாவகம் உங்களின் முன்னேற்றத்திற்கு மிகவும் சாதகமாக உள்ளது.
+• தகவல் தொழில்நுட்பம் (IT & Software), மேலாண்மை, ஆடிட்டிங் மற்றும் வர்த்தகத்தில் சிறப்பான வளர்ச்சி அமையும்.
+• சாதகமான திசை: வியாபாரம் மற்றும் தொழில்நுட்பத்திற்கு வடக்கு (புதன்) திசையும், அரசு & நிர்வாக தலைமைக்கு கிழக்கு (சூரியன்) திசையும் அனுகூலமானது.
+
+3. குடும்பம் & திருமண வாழ்க்கை (Marriage & Family):
+• களத்திர ஸ்தானத்தின் அடிப்படையில் பரஸ்பர புரிதலும், குடும்பப் பொறுப்புகளும் நல்ல சுபிட்சத்தைத் தரும்.
+
+4. நட்சத்திர பரிகார ஸ்தலம் & வழிபாடு (Remedy):
+${templeInfo}
+
+5. சுபமுகூர்த்த நல்வழிகாட்டல்:
+• முக்கிய முதலீடுகள் மற்றும் புதிய பணிகளை சுப திதிகளில் தொடங்கவும்.
+=====================================================
+ஜோதிடர் கையொப்பம்: குரு அகஸ்திய ஜோதிட நிலையம்
+வாழ்க வளமுடன்!`;
+
+      document.getElementById('astrologerNotes').value = report;
+      showToast('✨ அறிக்கை தானாக உருவாக்கப்பட்டது!');
+    }
+
+    function saveReportOnly() {
+      if (!activeModalBooking) return;
+      activeModalBooking.notes = document.getElementById('astrologerNotes').value.trim();
+      const idx = allBookings.findIndex(item => item.id === activeModalBooking.id);
+      if (idx !== -1) allBookings[idx] = activeModalBooking;
+      try {
+        localStorage.setItem('astro_bookings', JSON.stringify(allBookings));
+      } catch (e) {}
+      showToast('💾 அறிக்கை வெற்றிகரமாகச் சேமிக்கப்பட்டது!');
+    }
+
+    function buildPrintableHtml(b) {
+      const name = escapeHtml(b.name || 'அன்பர்');
+      const lagna = b.chart?.lagna?.sign || 'மேஷம்';
+      const rasi = b.chart?.rasi?.sign || 'ரிஷபம்';
+      const nak = b.chart?.nakshatra?.name || 'ரோகிணி';
+      const notes = escapeHtml(document.getElementById('astrologerNotes').value || b.notes || 'ஜோதிட அறிக்கை விரைவில் வழங்கப்படும்.');
+
+      return `
+        <div style="font-family:'Noto Sans Tamil', 'Inter', sans-serif; color:#1a0533; padding:25px; max-width:800px; margin:0 auto; background:#fff;">
+          <div style="text-align:center; border-bottom:3px double #7c3aed; padding-bottom:15px; margin-bottom:20px;">
+            <div style="font-size:26px; font-weight:800; color:#4c1d95;">⭐ ஜோதிட வழிகாட்டல் ஆலோசனை அறிக்கை ⭐</div>
+            <div style="font-size:14px; color:#6b21a8; margin-top:4px;">Guru Agasthiya Vedic Astrology Consultations — Official Report</div>
+            <div style="font-size:12px; color:#555; margin-top:6px;">பதிவு எண்: <strong>#${b.id}</strong> | தேதி: <strong>${b.slot_date} (${b.slot_time})</strong></div>
+          </div>
+
+          <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:13px;">
+            <tr style="background:#f5f3ff;">
+              <td style="padding:8px 12px; border:1px solid #ddd; width:20%;"><strong>ஜாதகர் பெயர்:</strong></td>
+              <td style="padding:8px 12px; border:1px solid #ddd; width:30%;">${name}</td>
+              <td style="padding:8px 12px; border:1px solid #ddd; width:20%;"><strong>தொலைபேசி:</strong></td>
+              <td style="padding:8px 12px; border:1px solid #ddd; width:30%;">${escapeHtml(b.phone)}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 12px; border:1px solid #ddd;"><strong>பிறந்த தேதி:</strong></td>
+              <td style="padding:8px 12px; border:1px solid #ddd;">${b.dob || '-'}</td>
+              <td style="padding:8px 12px; border:1px solid #ddd;"><strong>பிறந்த நேரம் & ஊர்:</strong></td>
+              <td style="padding:8px 12px; border:1px solid #ddd;">${b.tob || '-'} | ${escapeHtml(b.pob || '-')}</td>
+            </tr>
+            <tr style="background:#f5f3ff;">
+              <td style="padding:8px 12px; border:1px solid #ddd;"><strong>லக்னம்:</strong></td>
+              <td style="padding:8px 12px; border:1px solid #ddd;"><strong>${lagna}</strong></td>
+              <td style="padding:8px 12px; border:1px solid #ddd;"><strong>ராசி & நட்சத்திரம்:</strong></td>
+              <td style="padding:8px 12px; border:1px solid #ddd;"><strong>${rasi}</strong> / <strong>${nak}</strong></td>
+            </tr>
+          </table>
+
+          <div style="margin-bottom:15px;">
+            <strong style="color:#6b21a8; font-size:14px;">கேள்வி / ஆலோசனை நோக்கம்:</strong>
+            <div style="background:#faf5ff; border-left:4px solid #7c3aed; padding:10px 14px; margin-top:5px; font-size:13px; font-style:italic;">
+              "${escapeHtml(b.question || 'பொதுவான ஜோதிட வழிகாட்டல்')}"
+            </div>
+          </div>
+
+          <div style="margin-bottom:20px;">
+            <strong style="color:#6b21a8; font-size:14px;">ஜோதிடரின் விரிவான வழிகாட்டல் & பலன்கள்:</strong>
+            <div style="background:#fff; border:1px solid #c4b5fd; border-radius:6px; padding:15px; margin-top:6px; font-size:13px; line-height:1.7; white-space:pre-wrap;">
+${notes}
+            </div>
+          </div>
+
+          <div style="margin-top:30px; display:flex; justify-content:space-between; align-items:flex-end; border-top:1px dashed #c4b5fd; padding-top:15px; font-size:12px;">
+            <div>
+              <p>அலுவலக முத்திரை (Seal): <strong>[ APPROVED ]</strong></p>
+              <p style="color:#666; font-size:11px; margin-top:4px;">இது ஒரு ஜோதிட ஆலோசனைக் கணிப்பு மட்டுமே (Guidance Only).</p>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:'Courier New', monospace; font-size:14px; color:#4c1d95; font-weight:bold;">Guru Agasthiya Astro</div>
+              <p style="margin-top:2px;">தலைமை ஜோதிடர் கையொப்பம்</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function openPrintReport() {
+      if (!activeModalBooking) return;
+      saveReportOnly();
+      const html = buildPrintableHtml(activeModalBooking);
+      const printWin = window.open('', '_blank', 'width=900,height=800');
+      printWin.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Astro Report #${activeModalBooking.id}</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@400;600;700&display=swap" rel="stylesheet">
+          <style>
+            body { margin: 0; background: #fff; font-family: 'Noto Sans Tamil', sans-serif; }
+            @media print {
+              body { margin: 0; }
+              @page { size: A4; margin: 15mm; }
+            }
+          </style>
+        </head>
+        <body>
+          ${html}
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          <\/script>
+        </body>
+        </html>
+      `);
+      printWin.document.close();
+    }
+
+    function exportReportToPdf() {
+      if (!activeModalBooking) return;
+      saveReportOnly();
+      const b = activeModalBooking;
+      showToast('📄 PDF உருவாக்கப்படுகிறது...');
+
+      const container = document.createElement('div');
+      container.innerHTML = buildPrintableHtml(b);
+      document.body.appendChild(container);
+
+      if (window.html2pdf) {
+        const opt = {
+          margin:       10,
+          filename:     `Astro_Guidance_Report_${(b.name || 'Client').replace(/\s+/g, '_')}_${b.id}.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2, useCORS: true },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(container).save().then(() => {
+          document.body.removeChild(container);
+          showToast('✅ PDF வெற்றிகரமாக பதிவிறக்கப்பட்டது!');
+        }).catch(() => {
+          document.body.removeChild(container);
+          openPrintReport();
+        });
+      } else {
+        document.body.removeChild(container);
+        openPrintReport();
+      }
+    }
+
     function escapeHtml(str) {
       if (!str) return '';
       return String(str).replace(/[&<>"']/g, function(m) {
@@ -1129,3 +1363,4 @@
   </script>
 </body>
 </html>
+
