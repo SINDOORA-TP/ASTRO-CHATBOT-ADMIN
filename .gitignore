@@ -1,0 +1,14 @@
+# Database files
+data/*.sqlite
+data/*.sqlite-wal
+data/*.sqlite-shm
+*.sqlite
+
+# Uploaded payment slips
+uploads/payments/*
+!uploads/payments/.gitkeep
+
+# System files
+.DS_Store
+Thumbs.db
+*.log
